@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+# based on code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
+
 import numpy as np
 import cv2
 
