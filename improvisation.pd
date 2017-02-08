@@ -1,4 +1,4 @@
-#N canvas 0 72 1366 696 10;
+#N canvas 7 72 1351 694 10;
 #X obj 802 121 hsl 180 15 1 40 0 0 \$0-w \$0-width_ctrl width -2 -8
 1 10 -261682 -1 -1 3213 1;
 #X obj 801 154 hsl 180 15 0.9 0.999 0 0 \$0-d \$0-decay_ctrl decay
@@ -68,7 +68,7 @@
 #X obj 1205 453 s k70;
 #X obj 1245 453 s k71;
 #X msg 37 404 0.2;
-#X obj 11 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+#X obj 11 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -258113
 -1;
 #X obj 96 369 karpluck~;
 #X obj 113 299 r \$0-w;
@@ -87,7 +87,7 @@
 #X obj 96 469 dac~;
 #X obj 165 374 loadbang;
 #X obj 139 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 225 369 karpluck~;
 #X obj 242 299 r \$0-w;
 #X obj 259 322 r \$0-d;
@@ -105,7 +105,7 @@
 #X obj 225 469 dac~;
 #X obj 294 374 loadbang;
 #X obj 268 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 353 369 karpluck~;
 #X obj 370 299 r \$0-w;
 #X obj 387 322 r \$0-d;
@@ -123,7 +123,7 @@
 #X obj 353 469 dac~;
 #X obj 422 374 loadbang;
 #X obj 396 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 482 369 karpluck~;
 #X obj 499 299 r \$0-w;
 #X obj 516 322 r \$0-d;
@@ -141,7 +141,7 @@
 #X obj 482 469 dac~;
 #X obj 551 374 loadbang;
 #X obj 525 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 610 369 karpluck~;
 #X obj 627 299 r \$0-w;
 #X obj 644 322 r \$0-d;
@@ -159,7 +159,7 @@
 #X obj 610 469 dac~;
 #X obj 679 374 loadbang;
 #X obj 653 278 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj -32 754 karpluck~;
 #X obj -15 684 r \$0-w;
 #X obj 2 707 r \$0-d;
@@ -176,7 +176,7 @@
 #X obj -31 820 gpan~;
 #X obj -32 854 dac~;
 #X obj 37 759 loadbang;
-#X obj 11 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+#X obj 11 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -258113
 -1;
 #X obj 96 754 karpluck~;
 #X obj 113 684 r \$0-w;
@@ -195,7 +195,7 @@
 #X obj 96 854 dac~;
 #X obj 165 759 loadbang;
 #X obj 139 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 225 754 karpluck~;
 #X obj 242 684 r \$0-w;
 #X obj 259 707 r \$0-d;
@@ -213,7 +213,7 @@
 #X obj 225 854 dac~;
 #X obj 294 759 loadbang;
 #X obj 268 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 352 754 karpluck~;
 #X obj 369 684 r \$0-w;
 #X obj 386 707 r \$0-d;
@@ -231,7 +231,7 @@
 #X obj 352 854 dac~;
 #X obj 421 759 loadbang;
 #X obj 395 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 480 754 karpluck~;
 #X obj 497 684 r \$0-w;
 #X obj 514 707 r \$0-d;
@@ -249,7 +249,7 @@
 #X obj 480 854 dac~;
 #X obj 549 759 loadbang;
 #X obj 523 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 609 754 karpluck~;
 #X obj 626 684 r \$0-w;
 #X obj 643 707 r \$0-d;
@@ -267,7 +267,7 @@
 #X obj 609 854 dac~;
 #X obj 678 759 loadbang;
 #X obj 652 663 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
--1 -1;
+-258113 -1;
 #X obj 158 193 r k61;
 #X msg 165 404 0.25;
 #X obj 286 193 r k62;

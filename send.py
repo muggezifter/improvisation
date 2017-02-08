@@ -56,7 +56,7 @@ sock.send("70 580;")
 time.sleep(2)
 sock.send("70 0;")
 time.sleep(0.5)
-sock.send("71 380;")
+sock.send("71 580;")
 time.sleep(2)
 sock.send("71 0;")
 
