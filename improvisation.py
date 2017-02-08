@@ -5,6 +5,8 @@ import numpy as np
 import time
 import cv2
 import grid
+import math
+import socket
 
 CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
@@ -12,9 +14,13 @@ CV_CAP_PROP_FRAME_HEIGHT = 4
 GRID_COLOR = (34,139,45)
 TARGET_COLOR = (50,50,200)
 GRID_STROKE_WIDTH = 2
-INTERVAL = 0.5
+TARGET_STROKE_WIDTH = 2
+INTERVAL = 0.3
 
-cap = cv2.VideoCapture(2)
+PD_IP = "127.0.0.1"
+PD_PORT = 3000
+
+cap = cv2.VideoCapture(1)
 cap.set(CV_CAP_PROP_FRAME_WIDTH,1280);
 cap.set(CV_CAP_PROP_FRAME_HEIGHT,720);
 
@@ -22,7 +28,47 @@ last_change = time.time()
 current_x = 640
 current_y = 360
 
+current_chord = [0,0,0]
+
+previous_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
+current_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
+
+
+def distToFreq(dist):
+    return (-0.8*dist) + 300
+
+def calculateDistance(node):
+    return (node[0], math.sqrt(math.pow(current_x-node[1][0],2) + math.pow(current_y-node[1][1],2)))
+
+def playChord():
+    # calculate the distances and order by distance
+    distances = sorted(map(calculateDistance, grid.nodes), key=lambda tup: tup[1])
+   
+    # update current_chord
+    for x in range (0,3):
+        current_chord[x] = distances[x][0]
+
+    # update current_freqs
+    for distance in distances:
+        if distance[0] in current_chord:
+            current_freqs[distance[0]] = distToFreq(distance[1])
+        else: 
+            current_freqs[distance[0]] = 0
+    
+    # send new frequeny if different
+    for x in range (60,72):
+        if current_freqs[x] != previous_freqs[x]:
+            sock.send(str(x) + " " + str(current_freqs[x]) + ";")
+            previous_freqs[x] = current_freqs[x]
+
+# create a socket           
+sock = socket.socket(socket.AF_INET, # Internet
+             socket.SOCK_STREAM) # TCP
+sock.connect((PD_IP, PD_PORT))
+
+# main loop
 while(True):
+
     # Capture frame-by-frame
     ret, frame = cap.read()
 
@@ -41,8 +87,15 @@ while(True):
         cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
 
     for node in grid.nodes:
-        cv2.circle(frame, node[1],14,GRID_COLOR,-1, cv2.CV_AA),
-        cv2.putText(frame, str(node[2]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
+        if node[0] in current_chord:
+            cv2.circle(frame, node[1],16,TARGET_COLOR,-1, cv2.CV_AA),
+        else:
+            cv2.circle(frame, node[1],16,GRID_COLOR,-1, cv2.CV_AA),
+
+        if len(node[2]) == 2:
+            cv2.putText(frame, str(node[2]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
+        else:
+            cv2.putText(frame, str(node[2]), (node[1][0]-6,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
 
     # loop over the contours
     for c in cnts:
@@ -75,25 +128,25 @@ while(True):
                 #cv2.drawContours(frame, [approx], -1, (0, 0, 255), 4)
                 
 
-                # compute the center of the contour region and draw the
-                # crosshairs
+                # compute the center of the contour region and draw crosshairs
                 M = cv2.moments(approx)
                 (cX, cY) = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 #status = "x: " + str(cX) +   "y: " + str(cY)
 
                 (startX, endX) = (int(cX - 15), int(cX + 15))
                 (startY, endY) = (int(cY - 15), int(cY + 15))
-                cv2.line(frame, (startX, cY), (endX, cY), TARGET_COLOR, 2)
-                cv2.line(frame, (cX, startY), (cX, endY), TARGET_COLOR, 2)
+                cv2.line(frame, (startX, cY), (endX, cY), TARGET_COLOR, TARGET_STROKE_WIDTH)
+                cv2.line(frame, (cX, startY), (cX, endY), TARGET_COLOR, TARGET_STROKE_WIDTH)
 
                 # every INTERVAL seconds calculate new chord
                 if time.time() - last_change > INTERVAL:
                     last_change = time.time()
                     current_x = cX
                     current_y = cY
+                    playChord()
 
     # draw current position
-    cv2.circle(frame, (current_x,current_y),14,TARGET_COLOR,2),
+    cv2.circle(frame, (current_x,current_y),25,TARGET_COLOR,TARGET_STROKE_WIDTH),
 
     # draw the status text on the frame
     status = "x: " + str(current_x) + " y: " + str(current_y)
@@ -107,6 +160,8 @@ while(True):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+for x in range (60,72):
+    sock.send(str(x) + " 0;")
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
