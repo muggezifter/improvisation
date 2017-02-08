@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 
 # based on code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
-
 import numpy as np
 import time
 import cv2
+import grid
 
 CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
@@ -14,24 +14,13 @@ TARGET_COLOR = (50,50,200)
 GRID_STROKE_WIDTH = 2
 INTERVAL = 0.5
 
-nodes = [
-    (67,(230,30)),
-    (70,(570,30)),
-    (71,(60,300)),
-    (62,(400,300)),
-    (65,(740,300)),
-    (66,(230,570)),
-    (69,(570,570))
-]
-
-
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(CV_CAP_PROP_FRAME_WIDTH,1280);
 cap.set(CV_CAP_PROP_FRAME_HEIGHT,720);
 
 last_change = time.time()
-current_x = 400
-current_y = 300
+current_x = 640
+current_y = 360
 
 while(True):
     # Capture frame-by-frame
@@ -47,26 +36,15 @@ while(True):
 	# find contours in the edge map
     (cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    #draw grid
-    cv2.line(frame,nodes[0][1],nodes[1][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-    cv2.line(frame,nodes[0][1],nodes[2][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-    cv2.line(frame,nodes[0][1],nodes[6][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
+    # draw the grid
+    for edge in grid.edges:
+        cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
 
-    cv2.line(frame,nodes[1][1],nodes[4][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-    cv2.line(frame,nodes[1][1],nodes[5][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-
-    cv2.line(frame,nodes[2][1],nodes[4][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-    cv2.line(frame,nodes[2][1],nodes[5][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-    
-    cv2.line(frame,nodes[4][1],nodes[6][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)    
-    cv2.line(frame,nodes[5][1],nodes[6][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-
-    for node in nodes:
-        cv2.circle(frame, node[1],14,GRID_COLOR,-1),
-        cv2.putText(frame, str(node[0]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
+    for node in grid.nodes:
+        cv2.circle(frame, node[1],14,GRID_COLOR,-1, cv2.CV_AA),
+        cv2.putText(frame, str(node[2]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
 
     # loop over the contours
-
     for c in cnts:
         # approximate the contour
         peri = cv2.arcLength(c, True)
@@ -120,8 +98,6 @@ while(True):
     # draw the status text on the frame
     status = "x: " + str(current_x) + " y: " + str(current_y)
     cv2.putText(frame, status, (20, 30), cv2.FONT_HERSHEY_PLAIN, 1,TARGET_COLOR, 2)
-
-
 
 
     # Display the resulting frame
