@@ -14,7 +14,7 @@ TARGET_COLOR = (50,50,200)
 GRID_STROKE_WIDTH = 2
 INTERVAL = 0.5
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(2)
 cap.set(CV_CAP_PROP_FRAME_WIDTH,1280);
 cap.set(CV_CAP_PROP_FRAME_HEIGHT,720);
 
