@@ -16,4 +16,4 @@ Another work based on this grid is the [KHL4](https://github.com/muggezifter/khl
 
 The image recognition software uses [OpenCV](http://opencv.org).
 
-The sound instrument uses the _karpluck~_ abstraction from [Loomer](http://blog.loomer.co.uk/2010/02/karplus-strong-guitar-string-synthesis.html)
+The sound instrument uses the _karpluck~_ abstraction from [Loomer](http://blog.loomer.co.uk/2010/02/karplus-strong-guitar-string-synthesis.html) and _gpan~_ from the [Pan](https://puredata.info/downloads/pan/?searchterm=pan) library.
