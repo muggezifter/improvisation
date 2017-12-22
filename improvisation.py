@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # uses some code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
-from __future__ import print_function
+
 import numpy as np
 import time
 import argparse
@@ -15,8 +15,9 @@ CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
 
 GRID_COLOR = (34,139,45)
-CHORD_COLOR = (130,255,255)
+CHORD_COLOR = (100,255,255)
 TARGET_COLOR = (50,50,200)
+TEXT_COLOR = (120,120,120)
 GRID_STROKE_WIDTH = 2
 TARGET_STROKE_WIDTH = 2
 INTERVAL = 0.3
@@ -34,10 +35,13 @@ current_y = 360
 
 current_chord = [0,0,0]
 
-current_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
-previous_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
+current_freqs = {}
+previous_freqs = {}
 
-
+# inititalize
+for x in range (60,72):
+    current_freqs[x] = 0;
+    previous_freqs[x] = 0;
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gamma", 
@@ -47,9 +51,8 @@ ap.add_argument("-g", "--gamma",
 args = vars(ap.parse_args())
 mygamma = float(args["gamma"])
 
-# create a socket           
-sock = socket.socket(socket.AF_INET, # Internet
-             socket.SOCK_STREAM) # TCP
+# create a socket for communicating with pd          
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # TCP
 sock.connect((PD_IP, PD_PORT))
 
 
@@ -68,7 +71,7 @@ def memoize(f):
 
 @memoize
 def getTable(gamma):
-# build a lookup table mapping the pixel values [0, 255] to
+    # build a lookup table mapping the pixel values [0, 255] to
     # their adjusted gamma values
     invGamma = 1.0 / gamma
     table = np.array([((i / 255.0) ** invGamma) * 255
@@ -106,7 +109,11 @@ def playChord():
 def drawGrid(frame):
     # draw the grid
     for edge in grid.edges:
-        cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
+        
+        if  grid.nodes[edge[0]][0] in current_chord and grid.nodes[edge[1]][0] in current_chord:
+            cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],CHORD_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
+        else:   
+            cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
 
     for node in grid.nodes:
         if node[0] in current_chord:
@@ -193,14 +200,22 @@ while(True):
     # draw current position
     cv2.circle(frame, (current_x,current_y),25,TARGET_COLOR,TARGET_STROKE_WIDTH),
 
+    current_chord.sort()
+
+    key = ','.join(str(e) for e in current_chord)
+
+    str_chord = ""
+    if key in grid.chords:
+        str_chord = " chord: " + grid.chords[key]
+
     # draw the status text on the frame
-    status = "x: " + str(current_x) + " y: " + str(current_y)
-    cv2.putText(frame, status, (20, 30), cv2.FONT_HERSHEY_PLAIN, 1,TARGET_COLOR, 2)
+    status = "x: " + str(current_x) + " y: " + str(current_y) + str_chord
+    cv2.putText(frame, status, (22, 30), cv2.FONT_HERSHEY_COMPLEX, 0.8, TEXT_COLOR, 2)
 
 
     # Display the resulting frame
     cv2.imshow('improvisation',frame)
-    ##cv2.imshow('frame2',edged)
+    # cv2.imshow('edged',edged)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
