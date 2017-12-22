@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# based on code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
+# uses some code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
 from __future__ import print_function
 import numpy as np
 import time
@@ -9,6 +9,7 @@ import cv2
 import grid
 import math
 import socket
+import random
 
 CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
@@ -46,10 +47,15 @@ ap.add_argument("-g", "--gamma",
 args = vars(ap.parse_args())
 mygamma = float(args["gamma"])
 
+# create a socket           
+sock = socket.socket(socket.AF_INET, # Internet
+             socket.SOCK_STREAM) # TCP
+sock.connect((PD_IP, PD_PORT))
+
 
 def adjust_gamma(image, gamma=1.0):
     # apply gamma correction using the lookup table
-    return cv2.LUT(image, get_table(gamma))
+    return cv2.LUT(image, getTable(gamma))
 
 def memoize(f):
     memo = {}
@@ -61,7 +67,7 @@ def memoize(f):
 
 
 @memoize
-def get_table(gamma):
+def getTable(gamma):
 # build a lookup table mapping the pixel values [0, 255] to
     # their adjusted gamma values
     invGamma = 1.0 / gamma
@@ -97,29 +103,7 @@ def playChord():
             sock.send(str(x) + " " + str(current_freqs[x]) + ";")
             previous_freqs[x] = current_freqs[x]
 
-# create a socket           
-sock = socket.socket(socket.AF_INET, # Internet
-             socket.SOCK_STREAM) # TCP
-sock.connect((PD_IP, PD_PORT))
-
-# main loop
-while(True):
-
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-
-    frame = adjust_gamma(frame, mygamma);
-
-    status = "no target" 
-
-    # grab the current frame and initialize the status text
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
-    edged = cv2.Canny(blurred, 50, 150)
-
-	# find contours in the edge map
-    (cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+def drawGrid(frame):
     # draw the grid
     for edge in grid.edges:
         cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
@@ -134,6 +118,28 @@ while(True):
             cv2.putText(frame, str(node[2]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
         else:
             cv2.putText(frame, str(node[2]), (node[1][0]-6,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
+
+
+
+# main loop
+while(True):
+
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+
+    frame = adjust_gamma(frame, mygamma)
+
+    status = "no target" 
+
+    # grab the current frame and initialize the status text
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+    edged = cv2.Canny(blurred, 50, 150)
+
+	# find contours in the edge map
+    (cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    drawGrid(frame)
 
     # loop over the contours
     for c in cnts:
@@ -193,14 +199,15 @@ while(True):
 
 
     # Display the resulting frame
-    cv2.imshow('carplusplus',frame)
+    cv2.imshow('improvisation',frame)
     ##cv2.imshow('frame2',edged)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+
 for x in range (60,72):
-    sock.send(str(x) + " 0;")
+    sock.send(str(x) + " 0.0000" + str(random.randint(1,99)) +";")
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
