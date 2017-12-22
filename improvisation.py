@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 
 # based on code from http://www.pyimagesearch.com/2015/05/04/target-acquired-finding-targets-in-drone-and-quadcopter-video-streams-using-python-and-opencv/
+from __future__ import print_function
 import numpy as np
 import time
+import argparse
 import cv2
 import grid
 import math
@@ -12,6 +14,7 @@ CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
 
 GRID_COLOR = (34,139,45)
+CHORD_COLOR = (130,255,255)
 TARGET_COLOR = (50,50,200)
 GRID_STROKE_WIDTH = 2
 TARGET_STROKE_WIDTH = 2
@@ -30,8 +33,41 @@ current_y = 360
 
 current_chord = [0,0,0]
 
-previous_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
 current_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
+previous_freqs = { 60:0, 61:0, 62:0, 63:0, 64:0, 65:0, 66:0, 67:0, 68:0, 69:0, 70:0, 71:0 }
+
+
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-g", "--gamma", 
+    required=False, 
+    default='1', 
+    help="Gamma correction value (default = 1)")
+args = vars(ap.parse_args())
+mygamma = float(args["gamma"])
+
+
+def adjust_gamma(image, gamma=1.0):
+    # apply gamma correction using the lookup table
+    return cv2.LUT(image, get_table(gamma))
+
+def memoize(f):
+    memo = {}
+    def helper(x):
+        if x not in memo:        
+            memo[x] = f(x)
+        return memo[x]
+    return helper
+
+
+@memoize
+def get_table(gamma):
+# build a lookup table mapping the pixel values [0, 255] to
+    # their adjusted gamma values
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
+    return table
 
 
 def distToFreq(dist):
@@ -72,6 +108,8 @@ while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
 
+    frame = adjust_gamma(frame, mygamma);
+
     status = "no target" 
 
     # grab the current frame and initialize the status text
@@ -88,7 +126,7 @@ while(True):
 
     for node in grid.nodes:
         if node[0] in current_chord:
-            cv2.circle(frame, node[1],16,TARGET_COLOR,-1, cv2.CV_AA),
+            cv2.circle(frame, node[1],16,CHORD_COLOR,-1, cv2.CV_AA),
         else:
             cv2.circle(frame, node[1],16,GRID_COLOR,-1, cv2.CV_AA),
 
@@ -144,6 +182,7 @@ while(True):
                     current_x = cX
                     current_y = cY
                     playChord()
+
 
     # draw current position
     cv2.circle(frame, (current_x,current_y),25,TARGET_COLOR,TARGET_STROKE_WIDTH),
