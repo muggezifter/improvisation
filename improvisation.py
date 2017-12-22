@@ -20,7 +20,7 @@ TARGET_COLOR = (50,50,200)
 TEXT_COLOR = (120,120,120)
 GRID_STROKE_WIDTH = 2
 TARGET_STROKE_WIDTH = 2
-INTERVAL = 0.3
+INTERVAL = 0.2
 
 PD_IP = "127.0.0.1"
 PD_PORT = 3000
@@ -88,18 +88,13 @@ def calculateDistance(node):
 def playChord():
     # calculate the distances and order by distance
     distances = sorted(map(calculateDistance, grid.nodes), key=lambda tup: tup[1])
-   
     # update current_chord
     for x in range (0,3):
         current_chord[x] = distances[x][0]
-
+    current_chord.sort()
     # update current_freqs
     for distance in distances:
-        if distance[0] in current_chord:
-            current_freqs[distance[0]] = distToFreq(distance[1])
-        else: 
-            current_freqs[distance[0]] = 0
-    
+        current_freqs[distance[0]] = distToFreq(distance[1]) if distance[0] in current_chord else 0 
     # send new frequeny if different
     for x in range (60,72):
         if current_freqs[x] != previous_freqs[x]:
@@ -107,52 +102,38 @@ def playChord():
             previous_freqs[x] = current_freqs[x]
 
 def drawGrid(frame):
-    # draw the grid
+    # draw edges
     for edge in grid.edges:
-        
-        if  grid.nodes[edge[0]][0] in current_chord and grid.nodes[edge[1]][0] in current_chord:
-            cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],CHORD_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-        else:   
-            cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],GRID_COLOR,GRID_STROKE_WIDTH,cv2.CV_AA)
-
+        edge_color = CHORD_COLOR if grid.nodes[edge[0]][0] in current_chord and grid.nodes[edge[1]][0] in current_chord else GRID_COLOR
+        cv2.line(frame,grid.nodes[edge[0]][1],grid.nodes[edge[1]][1],edge_color,GRID_STROKE_WIDTH,cv2.CV_AA)
+    # draw nodes
     for node in grid.nodes:
-        if node[0] in current_chord:
-            cv2.circle(frame, node[1],16,CHORD_COLOR,-1, cv2.CV_AA),
-        else:
-            cv2.circle(frame, node[1],16,GRID_COLOR,-1, cv2.CV_AA),
-
-        if len(node[2]) == 2:
-            cv2.putText(frame, str(node[2]), (node[1][0]-10,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
-        else:
-            cv2.putText(frame, str(node[2]), (node[1][0]-6,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
+        node_color = CHORD_COLOR if node[0] in current_chord else GRID_COLOR
+        cv2.circle(frame, node[1],16,node_color,-1, cv2.CV_AA)
+        text_offset = 10 if len(node[2]) == 2 else 6    
+        cv2.putText(frame, str(node[2]), (node[1][0]-text_offset,node[1][1]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0,0,0), 1)
 
 
 
 # main loop
 while(True):
-
     # Capture frame-by-frame
     ret, frame = cap.read()
-
     frame = adjust_gamma(frame, mygamma)
-
     status = "no target" 
-
     # grab the current frame and initialize the status text
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (7, 7), 0)
     edged = cv2.Canny(blurred, 50, 150)
-
 	# find contours in the edge map
-    (cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+    (contours, _) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+   
     drawGrid(frame)
-
     # loop over the contours
-    for c in cnts:
+    for contour in contours:
         # approximate the contour
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.01 * peri, True)
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
 
         # ensure that the approximated contour is "roughly" rectangular
         if len(approx) >= 4 and len(approx) <= 6:
@@ -160,35 +141,29 @@ while(True):
             # use the bounding box to compute the aspect ratio
             (x, y, w, h) = cv2.boundingRect(approx)
             aspectRatio = w / float(h)
-
             # compute the solidity of the original contour
-            area = cv2.contourArea(c)
-            hullArea = cv2.contourArea(cv2.convexHull(c))
+            area = cv2.contourArea(contour)
+            hullArea = cv2.contourArea(cv2.convexHull(contour))
             solidity = area / float(hullArea)
 
             # compute whether or not the width and height, solidity, and
             # aspect ratio of the contour falls within appropriate bounds
             keepDims = w > 25 and h > 25
-            keepSolidity = solidity > 0.9
+            keepSolidity = solidity > 0.7
             keepAspectRatio = aspectRatio >= 0.8 and aspectRatio <= 1.2
 
             # ensure that the contour passes all our tests
             if keepDims and keepSolidity and keepAspectRatio:
-                # draw an outline around the target and update the status
-                # text
-                #cv2.drawContours(frame, [approx], -1, (0, 0, 255), 4)
-                
-
+                # draw an outline around the target 
+                # cv2.drawContours(frame, [approx], -1, (0, 0, 255), 4)
                 # compute the center of the contour region and draw crosshairs
                 M = cv2.moments(approx)
                 (cX, cY) = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 #status = "x: " + str(cX) +   "y: " + str(cY)
-
                 (startX, endX) = (int(cX - 15), int(cX + 15))
                 (startY, endY) = (int(cY - 15), int(cY + 15))
                 cv2.line(frame, (startX, cY), (endX, cY), TARGET_COLOR, TARGET_STROKE_WIDTH)
                 cv2.line(frame, (cX, startY), (cX, endY), TARGET_COLOR, TARGET_STROKE_WIDTH)
-
                 # every INTERVAL seconds calculate new chord
                 if time.time() - last_change > INTERVAL:
                     last_change = time.time()
@@ -196,27 +171,18 @@ while(True):
                     current_y = cY
                     playChord()
 
-
     # draw current position
     cv2.circle(frame, (current_x,current_y),25,TARGET_COLOR,TARGET_STROKE_WIDTH),
-
-    current_chord.sort()
-
+    # draw the status text on the frame
     key = ','.join(str(e) for e in current_chord)
-
     str_chord = ""
     if key in grid.chords:
         str_chord = " chord: " + grid.chords[key]
-
-    # draw the status text on the frame
     status = "x: " + str(current_x) + " y: " + str(current_y) + str_chord
-    cv2.putText(frame, status, (22, 30), cv2.FONT_HERSHEY_COMPLEX, 0.8, TEXT_COLOR, 2)
-
-
+    cv2.putText(frame, status, (22, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2)
     # Display the resulting frame
     cv2.imshow('improvisation',frame)
     # cv2.imshow('edged',edged)
-
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
